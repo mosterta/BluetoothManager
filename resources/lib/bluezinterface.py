@@ -17,6 +17,8 @@ from bluezsignal import BlueZSignal
 from bluezobject import BlueZAdapter
 from bluezobject import BlueZDevice
 from handle import handle
+from log import log
+from bluezagent import BlueZAgent, BlueZAgentHandler
 
 class BlueZInterface:
 	def __init__(self, callback):
@@ -28,24 +30,29 @@ class BlueZInterface:
 		self.adapters = {}
 		self.devices = {}
 
+		self.Agent = BlueZAgent(self.blueZ)
+		self.AgentHandler = BlueZAgentHandler(self.blueZ)
+
 		Thread(target = self.init_bt).start()
 
-	def on_change(self, func, arg):
+	def on_change(self, func, args):
 		try:
 			method = getattr(self.callback, func)
 		except Exception:
 			return
-		method(*arg)
+		method(*args)
 
 	def init_bt(self):
 		try:
 			self.scan_objects(False)
 			self.blueZsignal.start()
+			self.Agent.Start()
 			self.on_change("on_start_done",[self.get_adapter_list()])
 		except Exception as e:
 			handle(e)
 
 	def stop(self):
+		self.Agent.Stop()
 		self.blueZsignal.stop()
 
 	def scan_objects(self, send_mesg = True):
@@ -113,6 +120,7 @@ class BlueZInterface:
 
 	def adapter_power_on(self, adapter):
 		self.blueZ.set("org.bluez.Adapter1",adapter,"Powered","b",1)
+		discoverable_on(adapter)
 
 	def adapter_power_off(self, adapter):
 		self.blueZ.set("org.bluez.Adapter1",adapter,"Powered","b",0)
@@ -122,6 +130,10 @@ class BlueZInterface:
 
 	def cancel_trusted(self,device):
 		self.blueZ.set("org.bluez.Device1",device,"Trusted","b",0)
+		
+	def trustIfPaired(self, device):
+		if device.Paired and not device.Trusted:
+			self.trust(device.id)
 
 	def pair(self,device):
 		self.trust(device)
@@ -143,3 +155,26 @@ class BlueZInterface:
 
 	def disconnect_profile(self,device,profile):
 		self.blueZ.call_func("org.bluez.Device1", device,'DisconnectProfile',"s",profile)
+
+	def discoverable_on(self, adapter):
+		self.blueZ.set("org.bluez.Adapter1",adapter,"Discoverable","b",1)
+
+	def discoverable_off(self, adapter):
+		self.blueZ.set("org.bluez.Adapter1",adapter,"Discoverable","b",0)
+
+	def discoverable(self, adapter):
+		log("discoverable adapter %s" % str(adapter))
+		return self.blueZ.get(adapter, "org.bluez.Adapter1", "Discoverable")
+
+	def RequestPinCode(self, message, device):
+		log("Pairing request from %s" % device)
+		self.AgentHandler.RequestPinCode(message, device)
+
+	def Release(self, message):
+		self.AgentHandler.Release(message)
+
+	def AuthorizeService(self, message, device, uuid):
+		self.AgentHandler.AuthorizeService(message, device, uuid)
+
+	def Cancel(self, message):
+		self.AgentHandler.Cancel(message)

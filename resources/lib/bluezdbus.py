@@ -71,6 +71,12 @@ class BlueZDBus:
 		elif len(reply) == 1 :return reply[0]
 		else:	return reply
 
+	def return_func(self, message, *args):
+		reply = message.new_method_return()
+		if len(args) > 0:
+			reply.append_objects(*args)
+		self.conn.send(reply)
+
 	def introspect(self, object_path ):
 		request = dbus.Message.new_method_call(
 				destination = dbus.valid_bus_name(self.bus_name),

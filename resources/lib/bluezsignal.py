@@ -30,8 +30,10 @@ class BlueZSignal:
 
 	def message_filter(self, connection, message, _) :
 		try:
+			log(f"message.member {message.member} path {message.path}")
 			if message.path is not None and \
-				(message.path == "/" or message.path.startswith("/org/bluez")):
+				(message.path == "/" or message.path.startswith("/org/bluez") or
+				message.path == "/org/kodi/btagent"):
 				if message.member == "PropertiesChanged":
 					objlist = [arg for arg in message.objects]
 
@@ -77,6 +79,33 @@ class BlueZSignal:
 						self.on_change("on_adapter_new",[str(objlist[0])])
 
 					return DBUS.HANDLER_RESULT_HANDLED
+
+				if message.member == "RequestPinCode":
+					objlist = [arg for arg in message.objects]
+					device = objlist[0]
+					arg = [message, str(device)]
+					log(f"RequestPinCode {device}")
+					self.on_change("on_agent_pincode_request", arg)
+
+					return DBUS.HANDLER_RESULT_HANDLED
+
+				if message.member == "Release":
+					log("Release message")
+					self.on_change("on_agent_release", [message])
+
+					return DBUS.HANDLER_RESULT_HANDLED
+
+				if message.member == "AuthorizeService":
+					device, uuid = message.objects
+					log(f"AuthorizeService {device} {uuid}")
+					self.on_change("on_agent_authorize_service", [message, str(device), str(uuid)])
+					return DBUS.HANDLER_RESULT_HANDLED
+
+				if message.member == "Cancel":
+					log("Cancel message")
+					self.on_change("on_agent_pair_cancel", [message])
+					return DBUS.HANDLER_RESULT_HANDLED
+
 			return DBUS.HANDLER_RESULT_HANDLED
 
 		except Exception as e:

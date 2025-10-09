@@ -89,8 +89,16 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 		log("powered %s" % adapter.Powered)
 		if adapter.Powered:
 			self.config_power_on()
+			log("set discoverable on")
+			self.discoverable = self.bluez.discoverable(self.adapter.id)
+			self.bluez.discoverable_on(self.adapter.id)
 		else:
-			self.config_power_off()
+			log("set discoverable ")
+			#self.config_power_off()
+			#if self.discoverable:
+			#	self.bluez.discoverable_on(self.adapter.id)
+			#else:
+			#	self.bluez.discoverable_off(self.adapter.id)
 
 	def config_power_off(self):
 		log("config_power_off")
@@ -242,6 +250,7 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 	def on_device_change(self, objid, _):
 		log("on_device_change")
 		item,device,_ = self.items_by_id[objid]
+		self.bluez.trustIfPaired(device)
 		name,status = self.get_name_status(device)
 		if name is None:
 			return
@@ -268,6 +277,22 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 			log("has adapter")
 			self.config_adapter(adapters[0])
 		self.fill_device_list()
+
+	def on_agent_pincode_request(self, message, device):
+		log("on_agent_pincode_request")
+		self.bluez.RequestPinCode(message, device)
+
+	def on_agent_release(self, message):
+		log("on_agent_release")
+		self.bluez.Release(message)
+
+	def on_agent_authorize_service(self, message, device, uuid):
+		log("on_agent_authorize_service")
+		self.bluez.AuthorizeService(message, device, uuid)
+
+	def on_agent_pair_cancel(self, message):
+		log("on_agent_pair_cancel")
+		self.bluez.Cancel(message)
 
 	#
 	# dialog action handling
@@ -357,6 +382,7 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 			else:
 				self.bluez.adapter_power_on(self.adapter.id)
 				self.bluez.adapter_scan_on(self.adapter.id)
+				self.bluez.discoverable_on(self.adapter.id)
 
 		except Exception as e:
 			opthandle(e)
