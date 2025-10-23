@@ -250,7 +250,7 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 	def on_device_change(self, objid, _):
 		log("on_device_change")
 		item,device,_ = self.items_by_id[objid]
-		self.bluez.trustIfPaired(device)
+		#self.bluez.trustIfPaired(device)
 		name,status = self.get_name_status(device)
 		if name is None:
 			return
@@ -277,6 +277,10 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 			log("has adapter")
 			self.config_adapter(adapters[0])
 		self.fill_device_list()
+
+	def on_pairing_request(self, device, method):
+		log("on_pairing_request")
+		self.bluez.PairingRequest(device, method)
 
 	def on_agent_pincode_request(self, message, device):
 		log("on_agent_pincode_request")
@@ -333,6 +337,41 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 		if not success:
 			self.bluez.connect(device.id)
 
+	def show_context_menu(self, device):
+		items2 = []
+		if device.Trusted:
+			items2.append("Untrust")
+		else:
+			items2.append("Trust")
+		
+		if device.Connected:
+			items2.append("Disconnect")
+		else:
+			items2.append("Connect")
+		
+		if device.Paired:
+			items2.append("Unpair")
+		else:
+			items2.append("Pair")
+
+		dialog = xbmcgui.Dialog()
+		selection = dialog.contextmenu([item[0] for item in items])
+
+		if selection >= 0:
+			command = items[selection][1]
+			if command=="Untrust":
+				self.bluez.cancel_trusted(device.id)
+			if command=="Trust":
+				self.bluez.trust(device.id)
+			if command=="Disconnect":
+				self.bluez.disconnect(device.id)
+			if command=="Connect":
+				self.connect_profile(device.id)
+			if command=="Unpair":
+				self.bluez.remove(device.id)
+			if command=="Pair":
+				self.bluez.pair(device.id)
+
 	def on_list_click(self):
 		log("on_list_click")
 		if not self.running:
@@ -345,18 +384,18 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 		self.blueset.setVisible(True)
 		try:
 			device = self.items[self.list.getSelectedPosition()][1]
-
-			if device.Paired:
-				if self.remove:
-					self.bluez.remove(device.id)
-				else:
-					if device.Connected:
-						self.bluez.disconnect(device.id)
-					else:
-						self.connect_profile(device)
-			else:
-				self.bluez.pair(device.id)
-				self.connect_profile(device)
+			self.show_context_menu(device)
+			#if device.Paired:
+				#if self.remove:
+					#self.bluez.remove(device.id)
+				#else:
+					#if device.Connected:
+						#self.bluez.disconnect(device.id)
+					#else:
+						#self.connect_profile(device)
+			#else:
+				#self.bluez.pair(device.id)
+				#self.connect_profile(device)
 		except DBusError as e:
 			log(e.args[0])
 		except Exception as e:

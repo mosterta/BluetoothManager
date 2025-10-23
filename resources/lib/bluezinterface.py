@@ -166,6 +166,10 @@ class BlueZInterface:
 		log("discoverable adapter %s" % str(adapter))
 		return self.blueZ.get(adapter, "org.bluez.Adapter1", "Discoverable")
 
+	def PairingRequest(self, device, method):
+		log(f"PairingRequest device: {device} method: {method}")
+		self.AgentHandler.PairingRequest(device, method)
+
 	def RequestPinCode(self, message, device):
 		log("Pairing request from %s" % device)
 		self.AgentHandler.RequestPinCode(message, device)

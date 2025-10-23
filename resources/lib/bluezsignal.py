@@ -86,13 +86,11 @@ class BlueZSignal:
 					arg = [message, str(device)]
 					log(f"RequestPinCode {device}")
 					self.on_change("on_agent_pincode_request", arg)
-
 					return DBUS.HANDLER_RESULT_HANDLED
 
 				if message.member == "Release":
 					log("Release message")
 					self.on_change("on_agent_release", [message])
-
 					return DBUS.HANDLER_RESULT_HANDLED
 
 				if message.member == "AuthorizeService":
@@ -105,6 +103,17 @@ class BlueZSignal:
 					log("Cancel message")
 					self.on_change("on_agent_pair_cancel", [message])
 					return DBUS.HANDLER_RESULT_HANDLED
+				
+				if message.member == "DisplayPin":
+					log("DisplayPin message")
+					#self.on_change("on_agent_pair_cancel", [message])
+					return DBUS.HANDLER_RESULT_HANDLED
+
+				if message.member == "DisplayPasskey":
+					log("DisplayPasskey message")
+					#self.on_change("on_agent_pair_cancel", [message])
+					return DBUS.HANDLER_RESULT_HANDLED
+
 
 			return DBUS.HANDLER_RESULT_HANDLED
 
@@ -121,6 +130,7 @@ class BlueZSignal:
 			  )
 			conn.add_filter(self.message_filter, None)
 			conn.bus_add_match("type=signal")
+			conn.bus_add_match("type=method_call")
 
 			while conn.read_write_dispatch(timeout = 0.25) :
 				if not self.running:
