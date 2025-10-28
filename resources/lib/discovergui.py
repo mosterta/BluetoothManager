@@ -250,7 +250,9 @@ class DiscoverGui(  xbmcgui.WindowXMLDialog  ):
 	def on_device_change(self, objid, _):
 		log("on_device_change")
 		item,device,_ = self.items_by_id[objid]
-		self.bluez.trustIfPaired(device)
+		autotrust = xbmcaddon.Addon().getSettingBool("autotrust")
+		if autotrust:
+			self.bluez.trustIfPaired(device)
 		name,status = self.get_name_status(device)
 		if name is None:
 			return

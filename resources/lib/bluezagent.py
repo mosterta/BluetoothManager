@@ -6,7 +6,8 @@ class BlueZAgentHandler:
 
 	def RequestPinCode(self, message, device):
 		log(f"Pairing request from {device}")
-		self.blueZ.return_func(message, "s", "9876")  # Your fixed PIN
+		pin=xbmcaddon.Addon().getSettingString("pairingpin")
+		self.blueZ.return_func(message, "s", pin)
 
 	def Release(self, message):
 		self.blueZ.return_func(message)
